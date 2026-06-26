@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="format-detection" content="telephone=no,email=no,address=no">
+<meta name="wxchannel-id" content="">
+<title>周报聚合</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+    background: #0a0a0f;
+    color: #e8e8f0;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  #particles {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .page { display: none; position: relative; z-index: 1; }
+  .page.active { display: block; }
+
+  .nav-bar {
+    position: fixed;
+    top: 16px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    display: flex;
+    gap: 6px;
+    background: #14141f;
+    border: 1px solid #2a2a4a;
+    border-radius: 12px;
+    padding: 4px;
+  }
+  .nav-btn {
+    padding: 8px 18px;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    color: #6b6b8a;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.5px;
+  }
+  .nav-btn:active { opacity: 0.7; }
+  .nav-btn.active {
+    background: #1a1035;
+    color: #a78bfa;
+  }
+
+  .cover {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 80px 24px 60px;
+  }
+  .cover-label {
+    font-size: 13px;
+    letter-spacing: 4px;
+    color: #a78bfa;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .cover-title {
+    font-size: 56px;
+    font-weight: 800;
+    color: #f0f0f5;
+    margin-bottom: 4px;
+    line-height: 1.15;
+    letter-spacing: -2px;
+  }
+  .cover-title .g1 { color: #a78bfa; }
+  .cover-title .g2 { color: #f472b6; }
+  .cover-title .g3 { color: #34d399; }
+
+  .week-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 480px;
+    width: 100%;
+    margin-top: 40px;
+  }
+  .week-item {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    border-radius: 10px;
+    background: #14141f;
+    border: 1px solid #2a2a4a;
+    text-decoration: none;
+    color: #f0f0f5;
+    gap: 14px;
+  }
+  .week-item:active { background: #1e1a35; }
+  .week-num {
+    font-size: 24px;
+    font-weight: 700;
+    color: #a78bfa;
+    min-width: 48px;
+    text-align: left;
+  }
+  .week-meta { flex: 1; text-align: left; }
+  .week-range { font-size: 14px; color: #9a9ab0; }
+  .week-summary { font-size: 13px; color: #5a5a78; margin-top: 2px; }
+  .week-stats { display: flex; gap: 10px; font-size: 12px; color: #5a5a78; }
+
+  .progress-btn-wrap { margin-top: 32px; }
+  .progress-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    border: 1px solid #a78bfa;
+    border-radius: 10px;
+    background: #1a1035;
+    color: #a78bfa;
+    font-size: 15px;
+    font-family: inherit;
+    cursor: pointer;
+    letter-spacing: 0.3px;
+  }
+  .progress-btn:active { background: #2a1f5e; }
+
+  .detail {
+    max-width: 750px;
+    margin: 0 auto;
+    padding: 30px 16px 60px;
+  }
+  .detail-header {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .detail-header h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #a78bfa;
+    letter-spacing: -0.5px;
+  }
+  .detail-header .range { font-size: 14px; color: #6b6b8a; }
+
+  .card {
+    background: #14141f;
+    border: 1px solid #2a2a4a;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #a78bfa;
+    margin-bottom: 16px;
+  }
+
+  .work-item {
+    display: flex;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #1f1f35;
+  }
+  .work-item:last-child { border-bottom: none; }
+  .work-num {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: #f0f0f5;
+  }
+  .work-num.purple { background: #2a1f5e; }
+  .work-num.pink { background: #3a1a30; }
+  .work-num.green { background: #0f2f20; }
+  .work-name { font-size: 15px; font-weight: 500; color: #f0f0f5; }
+  .work-desc { font-size: 14px; color: #9a9ab0; margin-top: 2px; line-height: 1.5; }
+
+  .chart-wrap { padding: 4px 0; }
+  .chart-bar-group {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    height: 90px;
+    padding: 0 2px;
+  }
+  .chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .chart-bar {
+    width: 100%;
+    border-radius: 4px 4px 0 0;
+    min-height: 4px;
+  }
+  .chart-label { font-size: 12px; color: #6b6b8a; }
+
+  .pyramid-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 70px 12px 30px;
+    position: relative;
+  }
+  .pyramid-wrap {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    max-width: 1200px;
+    min-height: 600px;
+  }
+  .pyramid-svg {
+    width: 100%;
+    height: auto;
+    max-width: 1080px;
+    display: block;
+  }
+
+  .pyramid-layer { cursor: pointer; }
+  .pyramid-layer .label {
+    font-size: 17px;
+    font-weight: 600;
+    fill: #f0f0f5;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    letter-spacing: 0.5px;
+  }
+  .pyramid-layer .sub-label {
+    font-size: 12px;
+    fill: #9a9ab0;
+    text-anchor: middle;
+    dominant-baseline: middle;
+  }
+
+  @media (max-width: 768px) {
+    .cover-title { font-size: 36px; }
+    .detail { padding: 20px 12px 40px; }
+    .card { padding: 16px; }
+    .week-num { font-size: 20px; min-width: 40px; }
+    .cover-label { font-size: 11px; }
+    .nav-btn { font-size: 12px; padding: 6px 12px; }
+    .pyramid-page { padding: 60px 4px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+
+<div class="nav-bar">
+  <button class="nav-btn active" data-page="cover">目录</button>
+  <button class="nav-btn" data-page="pyramid">当前进度</button>
+</div>
+
+<!-- ====== 页面1: 目录 ====== -->
+<div class="page active" id="page-cover">
+  <section class="cover">
+    <div class="cover-label">2026</div>
+    <h1 class="cover-title">
+      <span class="g1">周</span><span class="g2">报</span><span class="g3">合</span><span class="g1">集</span>
+    </h1>
+
+    <div class="week-list">
+      <a class="week-item" href="#w26">
+        <div class="week-num">W26</div>
+        <div class="week-meta">
+          <div class="week-range">06.22 - 06.26</div>
+          <div class="week-summary">项目架构梳理 / 数据接口验证</div>
+        </div>
+        <div class="week-stats"><span>4 项已办</span><span>3 项待办</span></div>
+      </a>
+    </div>
+
+    <div class="progress-btn-wrap">
+      <button class="progress-btn" onclick="switchPage('pyramid')">
+        查看当前进度
+        <span style="font-size:16px;">→</span>
+      </button>
+    </div>
+  </section>
+
+  <section class="detail">
+    <div id="w26" style="scroll-margin-top: 70px;">
+      <div class="detail-header">
+        <h2>Week 26</h2>
+        <span class="range">06.22 - 06.26</span>
+      </div>
+
+      <div class="card">
+        <div class="card-title">本周数据概览</div>
+        <div class="chart-wrap">
+          <div class="chart-bar-group">
+            <div class="chart-col">
+              <div class="chart-bar" style="height:68px;background:linear-gradient(to top,#2a1f5e,#a78bfa);"></div>
+              <div class="chart-label">架构梳理</div>
+            </div>
+            <div class="chart-col">
+              <div class="chart-bar" style="height:48px;background:linear-gradient(to top,#3a1a30,#f472b6);"></div>
+              <div class="chart-label">方案制定</div>
+            </div>
+            <div class="chart-col">
+              <div class="chart-bar" style="height:56px;background:linear-gradient(to top,#0f2f20,#34d399);"></div>
+              <div class="chart-label">接口验证</div>
+            </div>
+            <div class="chart-col">
+              <div class="chart-bar" style="height:40px;background:linear-gradient(to top,#1a1a30,#818cf8);"></div>
+              <div class="chart-label">文档输出</div>
+            </div>
+            <div class="chart-col">
+              <div class="chart-bar" style="height:32px;background:linear-gradient(to top,#2a1f5e,#a78bfa);"></div>
+              <div class="chart-label">沟通同步</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">本周完成</div>
+        <div class="work-item">
+          <div class="work-num purple">1</div>
+          <div>
+            <div class="work-name">梳理项目整体架构</div>
+            <div class="work-desc">梳理了 ykcapital-master 项目整体结构，理清已有功能模块和智能对话模块之间的关系，输出文档存入项目知识库</div>
+          </div>
+        </div>
+        <div class="work-item">
+          <div class="work-num pink">2</div>
+          <div>
+            <div class="work-name">制定子项目推进方案</div>
+            <div class="work-desc">协助提出分层模块化子项目推进方案，建立下周核心计划</div>
+          </div>
+        </div>
+        <div class="work-item">
+          <div class="work-num green">3</div>
+          <div>
+            <div class="work-name">验证数据接口连通性</div>
+            <div class="work-desc">测试了免费的新闻和数据接口能不能正常使用，输出文档存入项目知识库</div>
+          </div>
+        </div>
+        <div class="work-item">
+          <div class="work-num purple">4</div>
+          <div>
+            <div class="work-name">完成架构设计方案高层汇报</div>
+            <div class="work-desc">向管理层汇报并评审整体架构设计方案，就实施路径和技术选型达成一致</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">下周计划</div>
+        <div class="work-item">
+          <div class="work-num purple">1</div>
+          <div>
+            <div class="work-name">搭建数据层核心引擎</div>
+            <div class="work-desc">建立数据层核心引擎，输出免费 + 付费数据源 skill.md 文档</div>
+          </div>
+        </div>
+        <div class="work-item">
+          <div class="work-num pink">2</div>
+          <div>
+            <div class="work-name">输出数据采集方案</div>
+            <div class="work-desc">测试免费与付费数据源，输出数据采集方案文档</div>
+          </div>
+        </div>
+        <div class="work-item">
+          <div class="work-num green">3</div>
+          <div>
+            <div class="work-name">对接 Telegram 消息交互</div>
+            <div class="work-desc">测试 Telegram Bot 与系统交互功能，确保能处理人工提问并做出有效反馈</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ====== 页面2: 当前进度 ====== -->
+<div class="page" id="page-pyramid">
+  <section class="pyramid-page">
+    <div class="pyramid-wrap">
+      <svg class="pyramid-svg" viewBox="0 0 1080 720" preserveAspectRatio="xMidYMid meet">
+        <g class="pyramid-layer" data-layer="1">
+          <polygon points="160,680 920,680 840,570 240,570" fill="#1a1435" stroke="#6b4baa" stroke-width="2"/>
+          <text class="label" x="540" y="635" fill="#c4b5fd">新闻层</text>
+          <text class="sub-label" x="540" y="658">News / 数据采集入口</text>
+        </g>
+        <g class="pyramid-layer" data-layer="2">
+          <polygon points="250,540 830,540 740,410 340,410" fill="#1e1a2e" stroke="#8a4a6a" stroke-width="2"/>
+          <text class="label" x="540" y="485" fill="#f9a8d4">专家层</text>
+          <text class="sub-label" x="540" y="510">Expert / LLM 分析处理</text>
+        </g>
+        <g class="pyramid-layer" data-layer="3">
+          <polygon points="340,380 740,380 660,270 420,270" fill="#1a1a25" stroke="#7a6a2a" stroke-width="2"/>
+          <text class="label" x="540" y="335" fill="#fcd34d">风控层</text>
+          <text class="sub-label" x="540" y="358">Risk Control / 安全过滤</text>
+        </g>
+        <g class="pyramid-layer" data-layer="4">
+          <polygon points="420,240 660,240 590,140 490,140" fill="#0a2f20" stroke="#3aaa7a" stroke-width="2"/>
+          <text class="label" x="540" y="200" fill="#6ee7b7">数字分身</text>
+          <text class="sub-label" x="540" y="223">Digital Twin / 输出层</text>
+        </g>
+
+        <!-- 层间双向箭头 -->
+        <g>
+          <line x1="540" y1="550" x2="540" y2="560" stroke="#c4b5fd" stroke-width="1.5"/>
+          <polygon points="530,550 540,540 550,550" fill="none" stroke="#c4b5fd" stroke-width="1.5" stroke-linejoin="round"/>
+          <polygon points="530,560 540,570 550,560" fill="none" stroke="#c4b5fd" stroke-width="1.5" stroke-linejoin="round"/>
+        </g>
+        <g>
+          <line x1="540" y1="400" x2="540" y2="410" stroke="#f9a8d4" stroke-width="1.5"/>
+          <polygon points="530,400 540,390 550,400" fill="none" stroke="#f9a8d4" stroke-width="1.5" stroke-linejoin="round"/>
+          <polygon points="530,410 540,420 550,410" fill="none" stroke="#f9a8d4" stroke-width="1.5" stroke-linejoin="round"/>
+        </g>
+        <g>
+          <line x1="540" y1="250" x2="540" y2="260" stroke="#fcd34d" stroke-width="1.5"/>
+          <polygon points="530,250 540,240 550,250" fill="none" stroke="#fcd34d" stroke-width="1.5" stroke-linejoin="round"/>
+          <polygon points="530,260 540,270 550,260" fill="none" stroke="#fcd34d" stroke-width="1.5" stroke-linejoin="round"/>
+        </g>
+
+        <!-- 顶部连接线 + 节点（纯SVG，微信兼容） -->
+        <!-- 信封 -->
+        <rect x="200" y="209" width="70" height="32" rx="6" fill="#1a1035" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="235" y="228" text-anchor="middle" font-size="18" fill="#c4b5fd">❓</text>
+        <!-- Telegram -->
+        <rect x="295" y="209" width="95" height="32" rx="6" fill="#1a1a35" stroke="#818cf8" stroke-width="1.5"/>
+        <text x="318" y="228" font-size="14" fill="#a5b4fc">✈️</text>
+        <text x="345" y="228" text-anchor="middle" font-size="13" font-weight="600" fill="#a5b4fc">Telegram</text>
+        <!-- 箭头 -->
+        <line x1="270" y1="225" x2="280" y2="225" stroke="#a78bfa" stroke-width="2"/>
+        <polygon points="280,219 290,225 280,231" fill="#a78bfa"/>
+        <line x1="390" y1="225" x2="400" y2="225" stroke="#818cf8" stroke-width="2"/>
+        <polygon points="400,219 410,225 400,231" fill="#818cf8"/>
+        <line x1="410" y1="225" x2="438" y2="225" stroke="#818cf8" stroke-width="1.5" stroke-dasharray="4,3"/>
+
+        <!-- 底部连接线 + 节点 -->
+        <!-- 新闻源 -->
+        <rect x="50" y="594" width="105" height="32" rx="6" fill="#0a1f15" stroke="#3aaa7a" stroke-width="1.5"/>
+        <text x="70" y="614" font-size="14" fill="#6ee7b7">📊</text>
+        <text x="112" y="614" text-anchor="middle" font-size="13" font-weight="600" fill="#6ee7b7">新闻源</text>
+        <!-- 微信 -->
+        <rect x="915" y="594" width="85" height="32" rx="6" fill="#0f2f20" stroke="#34d399" stroke-width="1.5"/>
+        <text x="930" y="614" font-size="14" fill="#6ee7b7">💬</text>
+        <text x="967" y="614" text-anchor="middle" font-size="13" font-weight="600" fill="#6ee7b7">微信</text>
+        <!-- 箭头 -->
+        <line x1="155" y1="610" x2="175" y2="610" stroke="#3aaa7a" stroke-width="2"/>
+        <polygon points="175,604 185,610 175,616" fill="#3aaa7a"/>
+        <line x1="880" y1="610" x2="900" y2="610" stroke="#34d399" stroke-width="2"/>
+        <polygon points="900,604 910,610 900,616" fill="#34d399"/>
+      </svg>
+    </div>
+  </section>
+</div>
+
+<script>
+  var canvas = document.getElementById('particles');
+  var ctx = canvas.getContext('2d');
+  var particles = [];
+  var w, h;
+
+  function resize() {
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  var COLORS = ['167,139,250', '244,114,182', '52,211,153', '252,211,77', '129,140,248'];
+
+  function Particle() {
+    this.reset();
+  }
+  Particle.prototype.reset = function() {
+    this.x = Math.random() * w;
+    this.y = h + 10;
+    this.size = Math.random() * 3 + 1;
+    this.speed = Math.random() * 1.2 + 0.3;
+    this.opacity = Math.random() * 0.35 + 0.05;
+    this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+    this.swing = Math.random() * 2;
+    this.swingSpeed = Math.random() * 0.02 + 0.005;
+    this.phase = Math.random() * Math.PI * 2;
+  };
+  Particle.prototype.update = function() {
+    this.y -= this.speed;
+    this.x += Math.sin(this.phase) * this.swing;
+    this.phase += this.swingSpeed;
+    if (this.y < -10) this.reset();
+  };
+  Particle.prototype.draw = function() {
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(' + this.color + ',' + this.opacity + ')';
+    ctx.fill();
+  };
+
+  for (var i = 0; i < 50; i++) {
+    var p = new Particle();
+    p.y = Math.random() * h;
+    particles.push(p);
+  }
+
+  function animate() {
+    ctx.clearRect(0, 0, w, h);
+    for (var i = 0; i < particles.length; i++) {
+      particles[i].update();
+      particles[i].draw();
+    }
+    requestAnimationFrame(animate);
+  }
+  animate();
+
+  function switchPage(name) {
+    var pages = document.querySelectorAll('.page');
+    var btns = document.querySelectorAll('.nav-btn');
+    for (var i = 0; i < pages.length; i++) { pages[i].classList.remove('active'); }
+    for (var i = 0; i < btns.length; i++) { btns[i].classList.remove('active'); }
+    document.getElementById('page-' + name).classList.add('active');
+    document.querySelector('.nav-btn[data-page="' + name + '"]').classList.add('active');
+  }
+
+  var navBtns = document.querySelectorAll('.nav-btn');
+  for (var i = 0; i < navBtns.length; i++) {
+    navBtns[i].addEventListener('click', function() { switchPage(this.dataset.page); });
+  }
+</script>
+
+</body>
+</html>
